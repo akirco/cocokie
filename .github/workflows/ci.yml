@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Full history is not needed; actions/checkout defaults are fine.
+      - uses: actions/checkout@v4
+
+      # Stable toolchain plus the two components the lint steps require.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # Caches ~/.cargo and target/ between runs.
+      - uses: Swatinem/rust-cache@v2
+
+      - name: rustfmt
+        run: cargo fmt --check
+
+      # `--all-targets` covers the library, examples and their test modules.
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: tests (lib + examples)
+        run: cargo test --all-targets
+
+      - name: doctests
+        run: cargo test --doc
+
+      # Broken intra-doc links and missing docs fail here, not silently.
+      - name: docs
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
+
+      # Syntax check only: the Python suite needs no browser or yt-dlp.
+      - name: python syntax
+        run: python3 -m py_compile vendor/extract_cookies.py
+
+      - name: python tests
+        run: python3 -m unittest discover -s vendor -p 'test_*.py' -v
