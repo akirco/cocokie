@@ -121,12 +121,11 @@ impl CookieQuery {
         }
 
         // An empty list means "require nothing" and is simply omitted.
-        if let Some(req) = &self.require {
-            if !req.is_empty() {
+        if let Some(req) = &self.require
+            && !req.is_empty() {
                 a.push("--require".into());
                 a.push(req.join(",").into());
             }
-        }
 
         match &self.source {
             Source::Browser(spec) => {
